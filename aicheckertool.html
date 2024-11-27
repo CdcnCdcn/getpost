@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Act Compliance Check</title>
+    <style>
+        /* Grundlegendes Styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .wrapper {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .visible {
+            display: block;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Akkordeon-Styling */
+        .accordion {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin: 15px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            background-color: #f9f9f9;
+            padding: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .accordion-header:hover {
+            background-color: #f0f0f0;
+        }
+
+        .accordion-header .risk-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .accordion-content {
+            padding: 15px;
+            background-color: #fff;
+            display: none;
+            border-top: 1px solid #ddd;
+            line-height: 1.6;
+        }
+
+        .accordion.expanded .accordion-content {
+            display: block;
+        }
+
+        .accordion.grau .accordion-header {
+            border-left: 6px solid #e0e0e0;
+        }
+
+        .accordion.grau .risk-indicator {
+            background-color: #e0e0e0;
+        }
+
+        .accordion.gruen .accordion-header {
+            border-left: 6px solid #c8e6c9;
+        }
+
+        .accordion.gruen .risk-indicator {
+            background-color: #4caf50;
+        }
+
+        .accordion.gelb .accordion-header {
+            border-left: 6px solid #fff9c4;
+        }
+
+        .accordion.gelb .risk-indicator {
+            background-color: #ffeb3b;
+        }
+
+        .accordion.orange .accordion-header {
+            border-left: 6px solid #ffe0b2;
+        }
+
+        .accordion.orange .risk-indicator {
+            background-color: #ff9800;
+        }
+
+        .accordion.rot .accordion-header {
+            border-left: 6px solid #ffcdd2;
+        }
+
+        .accordion.rot .risk-indicator {
+            background-color: #f44336;
+        }
+
+        /* Progress Bar Styling */
+        .progress-bar {
+            background: #e0e0e0;
+            height: 20px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            transition: background 0.4s ease;
+        }
+
+        #progress-bar-fill {
+            background: transparent;
+            height: 100%;
+            width: 0;
+            transition: width 0.4s ease, background 0.4s ease;
+        }
+
+        .buttons-container {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            background: #FFEA00;
+            color: black;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            flex: 1;
+            max-width: 150px;
+            margin: 0 5px;
+        }
+
+        button:hover {
+            background: #FFFA00;
+            transform: translateY(-4px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .option {
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            margin: 15px 0;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+            width: calc(100% - 20px);
+            margin-left: 10px;
+            margin-right: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .option:hover {
+            background: linear-gradient(90deg, #FFEA00, #FFFA00);
+            border-color: #FFEA00;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+        }
+
+        .option.selected {
+            background: linear-gradient(90deg, #FFEA00, #FFFA00);
+            color: black;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .result-item {
+            margin: 10px 0;
+            padding: 15px;
+            border: 1px solid #c8e6c9;
+            border-radius: 5px;
+            transition: transform 0.2s ease;
+        }
+
+        .result-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .result-item.grau { background-color: #e0e0e0; }
+        .result-item.gruen { background-color: #c8e6c9; }
+        .result-item.gelb { background-color: #fff9c4; }
+        .result-item.orange { background-color: #ffe0b2; }
+        .result-item.rot { background-color: #ffcdd2; }
+
+        h1 {
+            font-size: 26px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin: 20px 0;
+            color: #555;
+        }
+
+        p {
+            margin: 10px 0;
+        }
+
+        .button-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .button-label .arrow {
+            margin-left: 10px;
+            font-size: 18px;
+        }
+
+        #back-button .arrow {
+            margin-left: 0;
+            margin-right: 10px;
+        }
+
+        #start-button {
+            margin-top: 40px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .info-icon {
+            font-size: 18px;
+            cursor: pointer;
+            margin-left: 10px;
+            color: #007BFF;
+            display: inline-block;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            white-space: nowrap;
+            display: none;
+            font-size: 14px;
+            line-height: 1.4;
+            z-index: 10;
+        }
+
+    </style>
+</head>
+<body data-rsssl=1>
+    <div class="wrapper">
+        <div class="compliance-checker">
+            <div id="start-container" class="visible">
+                <h1>AI Act Compliance Check</h1>
+                <p>Erfüllt Ihr Unternehmen die neuen Anforderungen zur Nutzung von KI?</p>
+                <p>In wenigen Schritten erhalten Sie eine fundierte Ersteinschätzung, die sich an Ihrer konkreten Situation orientiert.</p>
+                <button id="start-button">Start</button>
+            </div>
+
+            <div id="main-container" class="hidden">
+                <div class="progress-bar">
+                    <div id="progress-bar-fill"></div>
+                </div>
+                <div id="question-container"></div>
+                <div class="buttons-container">
+                    <button id="back-button" disabled>
+                        <span class="button-label"><span class="arrow">←</span>Zurück</span>
+                    </button>
+                    <button id="next-button" disabled>
+                        <span class="button-label">Weiter<span class="arrow">→</span></span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="results-container" class="hidden">
+                <h2>Ergebnisse</h2>
+                <div id="results"></div>
+                <button id="restart-button">Erneut starten</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+    {
+        question: "Nutzen Sie derzeit KI in Ihrem Unternehmen?",
+        options: ["Ja", "Nein"],
+        key: "useAI",
+        risk: {
+            "Ja": "Mittleres Risiko",
+            "Nein": "Kein Risiko"
+        },
+        justification: {
+            "Ja": "Der Einsatz von KI kann je nach Anwendungsfall eine höhere Verantwortung erfordern, insbesondere bei sicherheits- oder grundrechtsrelevanten Themen.",
+            "Nein": "Wenn keine KI im Unternehmen verwendet wird, entfallen derzeit die Vorschriften des AI Act."
+        },
+        legalReference: {
+            "Ja": "AI Act, Artikel 4, Absätze 1–3.",
+            "Nein": "AI Act, keine Anwendung, da kein KI-System genutzt wird."
+        },
+        context: "Der AI Act betrifft Unternehmen, die KI-Systeme entwickeln oder nutzen, insbesondere wenn diese als hochrisiko eingestuft werden."
+    },
+    {
+        question: "In welchen Bereichen setzen Sie KI ein?",
+        options: ["Marketing und Kommunikation", "Kundensupport (z. B. Chatbots)", "Produktentwicklung", "Datenanalyse", "Personalmanagement (z. B. Recruiting, Leistungsbewertungen)"],
+        key: "aiAreas",
+        risk: {
+            "Marketing und Kommunikation": "Geringes Risiko",
+            "Kundensupport (z. B. Chatbots)": "Geringes Risiko",
+            "Produktentwicklung": "Mittleres Risiko",
+            "Datenanalyse": "Mittleres Risiko",
+            "Personalmanagement (z. B. Recruiting, Leistungsbewertungen)": "Mittleres Risiko"
+        },
+        justification: {
+            "Marketing und Kommunikation": "KI-Systeme in diesem Bereich betreffen in der Regel keine sicherheitskritischen oder hochsensiblen Anwendungsfälle.",
+            "Kundensupport (z. B. Chatbots)": "Einfache Automatisierung im Support birgt ein geringes Risiko für Fehlentscheidungen.",
+            "Produktentwicklung": "KI in der Produktentwicklung kann komplexere regulatorische Anforderungen auslösen.",
+            "Datenanalyse": "Datenintensive Anwendungen können Datenschutz- und Transparenzpflichten erfordern.",
+            "Personalmanagement (z. B. Recruiting, Leistungsbewertungen)": "Die Verarbeitung personenbezogener Daten im Personalbereich erfordert besondere Vorsicht."
+        },
+        legalReference: {
+            "Marketing und Kommunikation": "AI Act, Artikel 8.",
+            "Kundensupport (z. B. Chatbots)": "AI Act, Artikel 9.",
+            "Produktentwicklung": "AI Act, Artikel 10 und 11.",
+            "Datenanalyse": "DSGVO, Artikel 5, AI Act, Artikel 7.",
+            "Personalmanagement (z. B. Recruiting, Leistungsbewertungen)": "AI Act, Artikel 4, Absätze 6–8, DSGVO."
+        },
+        context: "Die Bereiche, in denen KI eingesetzt wird, beeinflussen die Art und Weise, wie der AI Act auf Ihr Unternehmen angewendet wird."
+    },
+    {
+        question: "Haben Sie interne Richtlinien für den Einsatz von KI?",
+        options: ["Ja, umfassende Richtlinien vorhanden", "Ja, aber nur für spezifische Anwendungsfälle", "Nein"],
+        key: "internalPolicies",
+        risk: {
+            "Ja, umfassende Richtlinien vorhanden": "Geringes Risiko",
+            "Ja, aber nur für spezifische Anwendungsfälle": "Mittleres Risiko",
+            "Nein": "Hohes Risiko"
+        },
+        justification: {
+            "Ja, umfassende Richtlinien vorhanden": "Umfassende Richtlinien minimieren Risiken und sorgen für Transparenz und Compliance.",
+            "Ja, aber nur für spezifische Anwendungsfälle": "Unvollständige Richtlinien können Schwachstellen und Unsicherheiten verursachen.",
+            "Nein": "Das Fehlen interner Richtlinien erhöht das Risiko von Fehlanwendungen und gesetzlichen Verstößen."
+        },
+        legalReference: {
+            "Ja, umfassende Richtlinien vorhanden": "AI Act, Artikel 12.",
+            "Ja, aber nur für spezifische Anwendungsfälle": "AI Act, Artikel 12.",
+            "Nein": "AI Act, Artikel 13, DSGVO, Artikel 24."
+        },
+        context: "Interne Richtlinien sorgen dafür, dass der Einsatz von KI im Unternehmen verantwortungsvoll und gesetzeskonform erfolgt."
+    },
+    {
+        question: "Wurden Ihre Mitarbeiter im Umgang mit KI geschult?",
+        options: ["Ja, regelmäßig", "Ja, aber nur einmalig", "Nein"],
+        key: "employeeTraining",
+        risk: {
+            "Ja, regelmäßig": "Geringes Risiko",
+            "Ja, aber nur einmalig": "Mittleres Risiko",
+            "Nein": "Hohes Risiko"
+        },
+        justification: {
+            "Ja, regelmäßig": "Regelmäßige Schulungen gewährleisten die sichere und effektive Nutzung von KI-Systemen.",
+            "Ja, aber nur einmalig": "Einmalige Schulungen können veraltet sein und sind nicht ausreichend, um mit Änderungen Schritt zu halten.",
+            "Nein": "Ohne Schulungen besteht ein hohes Risiko für unsachgemäßen Einsatz und Fehler."
+        },
+        legalReference: {
+            "Ja, regelmäßig": "AI Act, Artikel 15.",
+            "Ja, aber nur einmalig": "AI Act, Artikel 15.",
+            "Nein": "AI Act, Artikel 15, Absätze 3–5."
+        },
+        context: "Schulungen sind entscheidend, um sicherzustellen, dass Mitarbeiter KI-Systeme sicher und effektiv einsetzen können."
+    },
+    {
+        question: "Zu welcher Branche gehört Ihr Unternehmen?",
+        options: ["Gesundheit", "Finanzwesen", "Verkehr/Mobilität", "Bildung/Personalwesen", "Kritische Infrastruktur (z. B. Wasser, Energie)", "Andere"],
+        key: "industry",
+        risk: {
+            "Gesundheit": "Hohes Risiko",
+            "Finanzwesen": "Hohes Risiko",
+            "Verkehr/Mobilität": "Mittleres Risiko",
+            "Bildung/Personalwesen": "Geringes Risiko",
+            "Kritische Infrastruktur (z. B. Wasser, Energie)": "Hohes Risiko",
+            "Andere": "Individuelles Risiko"
+        },
+        justification: {
+            "Gesundheit": "Hochrisiko-Branche mit strengen regulatorischen Anforderungen.",
+            "Finanzwesen": "Hohe Anforderungen an Sicherheit, Datenintegrität und Transparenz.",
+            "Verkehr/Mobilität": "Mittleres Risiko aufgrund von Automatisierung und Sicherheit.",
+            "Bildung/Personalwesen": "Geringe direkte regulatorische Anforderungen.",
+            "Kritische Infrastruktur (z. B. Wasser, Energie)": "Extrem sensibel, da Risiken für die öffentliche Sicherheit bestehen.",
+            "Andere": "Risiko variiert je nach Branche und Einsatzbereich."
+        },
+        legalReference: {
+            "Gesundheit": "AI Act, Artikel 16, DSGVO.",
+            "Finanzwesen": "AI Act, Artikel 17.",
+            "Verkehr/Mobilität": "AI Act, Artikel 18.",
+            "Bildung/Personalwesen": "AI Act, Artikel 19.",
+            "Kritische Infrastruktur (z. B. Wasser, Energie)": "AI Act, Artikel 20.",
+            "Andere": "AI Act, Artikel 21."
+        },
+        context: "Die Branche hat Einfluss darauf, welche Regelungen des AI Acts für Ihr Unternehmen relevant sind."
+    },
+    {
+        question: "Nutzen Sie KI für Entscheidungen, die Auswirkungen auf Sicherheit oder Gesundheit haben?",
+        options: ["Ja", "Nein"],
+        key: "impactOnHealth",
+        risk: {
+            "Ja": "Hohes Risiko",
+            "Nein": "Kein Risiko"
+        },
+        justification: {
+            "Ja": "Solche Entscheidungen haben direkte Auswirkungen auf Leben und Gesundheit, weshalb strenge Anforderungen an Sicherheit und Zuverlässigkeit gelten.",
+            "Nein": "Ohne Einsatz von KI in diesen Bereichen entfallen die hohen regulatorischen Anforderungen."
+        },
+        legalReference: {
+            "Ja": "AI Act, Artikel 22.",
+            "Nein": "Keine spezifischen Vorgaben, da kein Einsatz in diesen Bereichen."
+        },
+        context: "KI, die sicherheits- oder gesundheitsrelevante Entscheidungen trifft, unterliegt strengeren Vorschriften."
+    },
+    {
+        question: "Nutzen Sie KI für Entscheidungen, die Auswirkungen auf Grundrechte von Personen haben (z. B. Bewerbungen, Kreditvergabe)?",
+        options: ["Ja", "Nein"],
+        key: "impactOnRights",
+        risk: {
+            "Ja": "Hohes Risiko",
+            "Nein": "Kein Risiko"
+        },
+        justification: {
+            "Ja": "Entscheidungen, die Grundrechte betreffen, wie etwa Datenschutz oder Gleichbehandlung, unterliegen besonders strengen Vorschriften.",
+            "Nein": "Wenn keine Grundrechte berührt werden, entfallen die spezifischen Vorschriften für diesen Bereich."
+        },
+        legalReference: {
+            "Ja": "AI Act, Artikel 23.",
+            "Nein": "Keine spezifischen Vorgaben, da kein Einsatz in diesen Bereichen."
+        },
+        context: "KI, die Grundrechte beeinflusst, wie etwa bei Kreditvergabe oder Bewerbungen, erfordert eine besondere Regulierung."
+    },
+    {
+        question: "Werden Ihre KI-Systeme in Hochrisiko-Bereichen eingesetzt?",
+        options: ["Ja, direkt für sicherheitsrelevante oder grundrechtsbezogene Entscheidungen", "Ja, aber nur unterstützend (kein direkter Einfluss auf Entscheidungen)", "Nein"],
+        key: "highRiskAreas",
+        risk: {
+            "Ja, direkt für sicherheitsrelevante oder grundrechtsbezogene Entscheidungen": "Hohes Risiko",
+            "Ja, aber nur unterstützend (kein direkter Einfluss auf Entscheidungen)": "Mittleres Risiko",
+            "Nein": "Kein Risiko"
+        },
+        justification: {
+            "Ja, direkt für sicherheitsrelevante oder grundrechtsbezogene Entscheidungen": "Einsätze in Hochrisikobereichen erfordern umfassende Prüfungen und Sicherheitsmaßnahmen.",
+            "Ja, aber nur unterstützend (kein direkter Einfluss auf Entscheidungen)": "Unterstützende KI-Systeme erfordern weniger strenge Maßnahmen, müssen aber überwacht werden.",
+            "Nein": "Kein Risiko, da keine Hochrisikobereiche betroffen sind."
+        },
+        legalReference: {
+            "Ja, direkt für sicherheitsrelevante oder grundrechtsbezogene Entscheidungen": "AI Act, Artikel 24.",
+            "Ja, aber nur unterstützend (kein direkter Einfluss auf Entscheidungen)": "AI Act, Artikel 25.",
+            "Nein": "Keine Anwendung des AI Acts."
+        },
+        context: "Einsätze in Hochrisikobereichen erfordern besonders strenge regulatorische Maßnahmen."
+    },
+    {
+        question: "Für welche Zwecke setzen Sie KI ein?",
+        options: ["Automatisierte Texte/Antworten (z. B. Kundenkommunikation)", "Generierung von Inhalten (Texte, Designs, Code)", "Datenanalyse und Mustererkennung", "Unterstützung in Entscheidungsprozessen"],
+        key: "aiPurposes",
+        risk: {
+            "Automatisierte Texte/Antworten (z. B. Kundenkommunikation)": "Geringes Risiko",
+            "Generierung von Inhalten (Texte, Designs, Code)": "Mittleres Risiko",
+            "Datenanalyse und Mustererkennung": "Mittleres Risiko",
+            "Unterstützung in Entscheidungsprozessen": "Hohes Risiko"
+        },
+        justification: {
+            "Automatisierte Texte/Antworten (z. B. Kundenkommunikation)": "Einfache Automatisierungen stellen in der Regel ein geringes Risiko dar.",
+            "Generierung von Inhalten (Texte, Designs, Code)": "Erfordert besondere Überprüfungen, um Fehlinformationen zu vermeiden.",
+            "Datenanalyse und Mustererkennung": "Datenschutz und Datenintegrität sind besonders wichtig.",
+            "Unterstützung in Entscheidungsprozessen": "KI, die Entscheidungen unterstützt, kann gravierende Folgen haben, wenn Fehler auftreten."
+        },
+        legalReference: {
+            "Automatisierte Texte/Antworten (z. B. Kundenkommunikation)": "AI Act, Artikel 26.",
+            "Generierung von Inhalten (Texte, Designs, Code)": "AI Act, Artikel 27.",
+            "Datenanalyse und Mustererkennung": "AI Act, Artikel 28.",
+            "Unterstützung in Entscheidungsprozessen": "AI Act, Artikel 29."
+        },
+        context: "Der Zweck der KI-Anwendung bestimmt, welche Anforderungen des AI Acts gelten."
+    },
+    {
+        question: "Welche Art von Daten geben Sie in das KI-System ein?",
+        options: ["Keine personenbezogenen Daten", "Anonymisierte Daten", "Personenbezogene Daten (z. B. Name, Adresse, Geburtsdatum)", "Sensible Daten (z. B. Gesundheits- oder Finanzdaten)"],
+        key: "dataInput",
+        risk: {
+            "Keine personenbezogenen Daten": "Kein Risiko",
+            "Anonymisierte Daten": "Geringes Risiko",
+            "Personenbezogene Daten (z. B. Name, Adresse, Geburtsdatum)": "Mittleres Risiko",
+            "Sensible Daten (z. B. Gesundheits- oder Finanzdaten)": "Hohes Risiko"
+        },
+        justification: {
+            "Keine personenbezogenen Daten": "Keine Risiken, da keine sensiblen Daten verarbeitet werden.",
+            "Anonymisierte Daten": "Minimiertes Risiko, da keine Rückverfolgung möglich ist.",
+            "Personenbezogene Daten (z. B. Name, Adresse, Geburtsdatum)": "Erfordert die Einhaltung der DSGVO und Sicherheitsmaßnahmen.",
+            "Sensible Daten (z. B. Gesundheits- oder Finanzdaten)": "Erhöhte Sicherheitsanforderungen aufgrund der Sensibilität der Daten."
+        },
+        legalReference: {
+            "Keine personenbezogenen Daten": "DSGVO, keine Anwendung.",
+            "Anonymisierte Daten": "DSGVO, Artikel 25.",
+            "Personenbezogene Daten (z. B. Name, Adresse, Geburtsdatum)": "DSGVO, Artikel 6.",
+            "Sensible Daten (z. B. Gesundheits- oder Finanzdaten)": "DSGVO, Artikel 9."
+        },
+        context: "Die Art der verwendeten Daten beeinflusst die regulatorischen Anforderungen erheblich."
+    },
+    {
+        question: "Haben Sie Maßnahmen ergriffen, um den Datenschutz bei der KI-Nutzung zu gewährleisten?",
+        options: ["Ja, umfassende Maßnahmen (z. B. DSGVO-konform, Datenanonymisierung)", "Ja, grundlegende Maßnahmen (z. B. minimale Datennutzung)", "Nein, aber geplant", "Nein"],
+        key: "dataProtectionMeasures",
+        risk: {
+            "Ja, umfassende Maßnahmen (z. B. DSGVO-konform, Datenanonymisierung)": "Geringes Risiko",
+            "Ja, grundlegende Maßnahmen (z. B. minimale Datennutzung)": "Mittleres Risiko",
+            "Nein, aber geplant": "Mittleres Risiko",
+            "Nein": "Hohes Risiko"
+        },
+        justification: {
+            "Ja, umfassende Maßnahmen (z. B. DSGVO-konform, Datenanonymisierung)": "Sichere Datenverarbeitung minimiert das Risiko.",
+            "Ja, grundlegende Maßnahmen (z. B. minimale Datennutzung)": "Grundlegende Maßnahmen können ausreichen, sind jedoch nicht umfassend.",
+            "Nein, aber geplant": "Das Fehlen aktueller Maßnahmen kann temporäre Risiken darstellen.",
+            "Nein": "Ohne Datenschutzmaßnahmen besteht ein erhebliches Risiko."
+        },
+        legalReference: {
+            "Ja, umfassende Maßnahmen (z. B. DSGVO-konform, Datenanonymisierung)": "DSGVO, Artikel 5.",
+            "Ja, grundlegende Maßnahmen (z. B. minimale Datennutzung)": "DSGVO, Artikel 24.",
+            "Nein, aber geplant": "DSGVO, Artikel 32.",
+            "Nein": "DSGVO, Artikel 25."
+        },
+        context: "Datenschutz ist zentral für die Einhaltung der KI-Vorschriften, insbesondere bei personenbezogenen Daten."
+    },
+    {
+        question: "Sind Sie sich der Transparenzpflichten bewusst, die ab August 2025 gelten?",
+        options: ["Ja, und wir haben diese bereits umgesetzt", "Nein"],
+        key: "transparencyAwareness",
+        risk: {
+            "Ja, und wir haben diese bereits umgesetzt": "Geringes Risiko",
+            "Nein": "Mittleres Risiko"
+        },
+        justification: {
+            "Ja, und wir haben diese bereits umgesetzt": "Frühzeitige Umsetzung sorgt für Compliance und minimiert Risiken.",
+            "Nein": "Fehlende Transparenzmaßnahmen können rechtliche Risiken mit sich bringen."
+        },
+        legalReference: {
+            "Ja, und wir haben diese bereits umgesetzt": "AI Act, Artikel 30.",
+            "Nein": "AI Act, Artikel 30, Absätze 2–4."
+        },
+        context: "Transparenzpflichten betreffen die Nachvollziehbarkeit und Offenlegung der Funktionsweise von KI-Systemen."
+    },
+    {
+        question: "Haben Sie einen Plan, um die Dokumentations- und Meldepflichten zu erfüllen?",
+        options: ["Ja, ein vollständiger Plan ist vorhanden", "Ja, ein erster Entwurf ist in Arbeit", "Nein"],
+        key: "documentationPlan",
+        risk: {
+            "Ja, ein vollständiger Plan ist vorhanden": "Geringes Risiko",
+            "Ja, ein erster Entwurf ist in Arbeit": "Mittleres Risiko",
+            "Nein": "Hohes Risiko"
+        },
+        justification: {
+            "Ja, ein vollständiger Plan ist vorhanden": "Ein klarer Plan stellt sicher, dass Dokumentationspflichten eingehalten werden.",
+            "Ja, ein erster Entwurf ist in Arbeit": "Ein erster Entwurf reduziert Risiken, muss jedoch konkretisiert werden.",
+            "Nein": "Ohne Plan besteht ein hohes Risiko von Regelverstößen."
+        },
+        legalReference: {
+            "Ja, ein vollständiger Plan ist vorhanden": "AI Act, Artikel 31.",
+            "Ja, ein erster Entwurf ist in Arbeit": "AI Act, Artikel 31, Absatz 2.",
+            "Nein": "AI Act, Artikel 31, Absatz 5."
+        },
+        context: "Die Einhaltung der Dokumentationspflichten ist zentral für die Compliance."
+    },
+    {
+        question: "Sind Sie darauf vorbereitet, Kunden über die Nutzung von KI und deren Funktionsweise zu informieren?",
+        options: ["Ja, vollständig vorbereitet", "Ja, aber nur für ausgewählte Anwendungsfälle", "Nein, aber geplant", "Nein"],
+        key: "customerCommunication",
+        risk: {
+            "Ja, vollständig vorbereitet": "Geringes Risiko",
+            "Ja, aber nur für ausgewählte Anwendungsfälle": "Mittleres Risiko",
+            "Nein, aber geplant": "Mittleres Risiko",
+            "Nein": "Hohes Risiko"
+        },
+        justification: {
+            "Ja, vollständig vorbereitet": "Transparente Kommunikation stärkt das Vertrauen der Kunden und minimiert rechtliche Risiken.",
+            "Ja, aber nur für ausgewählte Anwendungsfälle": "Teilweise Umsetzung reduziert Risiken, erfordert jedoch weitere Maßnahmen.",
+            "Nein, aber geplant": "Ein Plan zur Umsetzung hilft, ist jedoch aktuell unzureichend.",
+            "Nein": "Fehlende Kommunikation birgt erhebliche rechtliche und reputative Risiken."
+        },
+        legalReference: {
+            "Ja, vollständig vorbereitet": "AI Act, Artikel 32.",
+            "Ja, aber nur für ausgewählte Anwendungsfälle": "AI Act, Artikel 32, Absatz 3.",
+            "Nein, aber geplant": "AI Act, Artikel 32, Absatz 5.",
+            "Nein": "AI Act, Artikel 32, Absatz 7."
+        },
+        context: "Die Kunden müssen über den Einsatz und die Funktionsweise von KI-Systemen informiert werden, um Transparenz zu gewährleisten."
+    },
+    {
+        question: "Wie stellen Sie sicher, dass Ihre KI-Systeme sicher und zuverlässig arbeiten?",
+        options: ["Regelmäßige Sicherheitsprüfungen und Monitoring", "Risikomanagement-Systeme und externe Audits", "Nur sporadische Überprüfung", "Keine Maßnahmen"],
+        key: "systemReliability",
+        risk: {
+            "Regelmäßige Sicherheitsprüfungen und Monitoring": "Geringes Risiko",
+            "Risikomanagement-Systeme und externe Audits": "Geringes Risiko",
+            "Nur sporadische Überprüfung": "Mittleres Risiko",
+            "Keine Maßnahmen": "Hohes Risiko"
+        },
+        justification: {
+            "Regelmäßige Sicherheitsprüfungen und Monitoring": "Eine kontinuierliche Überwachung gewährleistet die sichere Nutzung von KI-Systemen.",
+            "Risikomanagement-Systeme und externe Audits": "Externe Prüfungen verstärken die Zuverlässigkeit und reduzieren Risiken.",
+            "Nur sporadische Überprüfung": "Unregelmäßige Prüfungen lassen potenzielle Schwachstellen unentdeckt.",
+            "Keine Maßnahmen": "Ohne Überprüfung besteht ein erhebliches Risiko für Fehler und Missbrauch."
+        },
+        legalReference: {
+            "Regelmäßige Sicherheitsprüfungen und Monitoring": "AI Act, Artikel 33.",
+            "Risikomanagement-Systeme und externe Audits": "AI Act, Artikel 34.",
+            "Nur sporadische Überprüfung": "AI Act, Artikel 33, Absatz 5.",
+            "Keine Maßnahmen": "AI Act, Artikel 35, Absatz 2."
+        },
+        context: "Zuverlässigkeit und Sicherheit sind grundlegende Anforderungen an den Betrieb von KI-Systemen."
+    },
+    {
+        question: "Wird Ihre KI als Teil eines Produkts oder einer Dienstleistung in einer Hochrisiko-Umgebung eingesetzt?",
+        options: ["Ja, direkt (z. B. für Entscheidungen mit hohen Auswirkungen)", "Ja, aber nur unterstützend", "Nein"],
+        key: "riskEnvironment",
+        risk: {
+            "Ja, direkt (z. B. für Entscheidungen mit hohen Auswirkungen)": "Hohes Risiko",
+            "Ja, aber nur unterstützend": "Mittleres Risiko",
+            "Nein": "Kein Risiko"
+        },
+        justification: {
+            "Ja, direkt (z. B. für Entscheidungen mit hohen Auswirkungen)": "Hochrisiko-Umgebungen erfordern strenge Kontrollen und Sicherheitsmaßnahmen.",
+            "Ja, aber nur unterstützend": "Unterstützende Systeme haben weniger direkte Auswirkungen, benötigen aber dennoch Überwachung.",
+            "Nein": "Kein Risiko, da die KI nicht in Hochrisiko-Umgebungen eingesetzt wird."
+        },
+        legalReference: {
+            "Ja, direkt (z. B. für Entscheidungen mit hohen Auswirkungen)": "AI Act, Artikel 36.",
+            "Ja, aber nur unterstützend": "AI Act, Artikel 37.",
+            "Nein": "Keine Anwendung des AI Acts."
+        },
+        context: "Der Einsatz in Hochrisiko-Umgebungen erfordert besondere regulatorische Aufmerksamkeit."
+    },
+    {
+        question: "Haben Sie eine Haftungsklausel für KI-generierte Inhalte in Ihren Verträgen?",
+        options: ["Ja, vollständig integriert", "Nein, aber geplant", "Nein"],
+        key: "liabilityClause",
+        risk: {
+            "Ja, vollständig integriert": "Geringes Risiko",
+            "Nein, aber geplant": "Mittleres Risiko",
+            "Nein": "Hohes Risiko"
+        },
+        justification: {
+            "Ja, vollständig integriert": "Eine Haftungsklausel schützt das Unternehmen vor rechtlichen Folgen im Falle von Fehlern.",
+            "Nein, aber geplant": "Ein geplanter Ansatz reduziert Risiken, ist jedoch aktuell unzureichend.",
+            "Nein": "Fehlende Haftungsklauseln können zu erheblichen rechtlichen und finanziellen Risiken führen."
+        },
+        legalReference: {
+            "Ja, vollständig integriert": "AI Act, Artikel 38.",
+            "Nein, aber geplant": "AI Act, Artikel 39, Absatz 2.",
+            "Nein": "AI Act, Artikel 40."
+        },
+        context: "Eine Haftungsklausel minimiert das Risiko im Umgang mit KI-generierten Inhalten."
+    },
+    {
+        question: "Wer ist für die Endprüfung der KI-generierten Inhalte verantwortlich?",
+        options: ["Unser Unternehmen führt eine vollständige Prüfung durch", "Der Kunde übernimmt die Prüfung", "Keine spezifische Prüfung (automatisierte Prozesse)"],
+        key: "contentReviewResponsibility",
+        risk: {
+            "Unser Unternehmen führt eine vollständige Prüfung durch": "Geringes Risiko",
+            "Der Kunde übernimmt die Prüfung": "Mittleres Risiko",
+            "Keine spezifische Prüfung (automatisierte Prozesse)": "Hohes Risiko"
+        },
+        justification: {
+            "Unser Unternehmen führt eine vollständige Prüfung durch": "Eine interne Prüfung minimiert das Risiko fehlerhafter oder missbräuchlicher Inhalte.",
+            "Der Kunde übernimmt die Prüfung": "Die Verantwortung des Kunden reduziert interne Risiken, kann aber zu Konflikten führen.",
+            "Keine spezifische Prüfung (automatisierte Prozesse)": "Ohne Prüfung besteht ein hohes Risiko für Fehler oder Missbrauch."
+        },
+        legalReference: {
+            "Unser Unternehmen führt eine vollständige Prüfung durch": "AI Act, Artikel 41.",
+            "Der Kunde übernimmt die Prüfung": "AI Act, Artikel 42.",
+            "Keine spezifische Prüfung (automatisierte Prozesse)": "AI Act, Artikel 43."
+        },
+        context: "Die Verantwortung für die Endprüfung ist entscheidend, um die Einhaltung der Vorschriften sicherzustellen."
+    }
+];
+
+let currentQuestionIndex = 0;
+const progressBarFill = document.getElementById("progress-bar-fill");
+const questionContainer = document.getElementById("question-container");
+const nextButton = document.getElementById("next-button");
+const answers = {};
+const backButton = document.getElementById("back-button");
+const restartButton = document.getElementById("restart-button");
+
+document.getElementById("start-button").addEventListener("click", () => {
+    toggleVisibility("start-container", "main-container");
+    showQuestion();
+    updateProgressBar(); // Fortschritt starten
+});
+
+function toggleVisibility(hideId, showId) {
+    document.getElementById(hideId).classList.remove("visible");
+    document.getElementById(hideId).classList.add("hidden");
+    document.getElementById(showId).classList.remove("hidden");
+    document.getElementById(showId).classList.add("visible");
+}
+
+function showQuestion() {
+    const currentQuestion = questions[currentQuestionIndex];
+    questionContainer.innerHTML = `
+        <h2 data-context="${currentQuestion.context}">
+            ${currentQuestion.question}
+            <span class="info-icon">ℹ️</span>
+        </h2>
+        ${currentQuestion.options.map(option => `
+            <div class="option" data-value="${option}">
+                <span>${option}</span>
+            </div>`).join("")}
+    `;
+
+    addInfoIconHoverEffect(); // Tooltip aktivieren
+    addOptionClickEvents(); // Klickbare Optionen hinzufügen
+    updateButtons(); // Buttons aktivieren/deaktivieren
+    updateProgressBar(); // Fortschrittsbalken aktualisieren
+}
+
+function addInfoIconHoverEffect() {
+    document.querySelectorAll('.info-icon').forEach(icon => {
+        icon.addEventListener('mouseover', function() {
+            const tooltipText = icon.closest('h2').getAttribute('data-context');
+            console.log("Tooltip Text:", tooltipText);
+
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.innerText = tooltipText;
+            document.body.appendChild(tooltip);
+
+            const rect = icon.getBoundingClientRect();
+            tooltip.style.top = `${rect.bottom + 10}px`;
+            tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)}px`;
+            tooltip.style.display = 'block';
+
+            icon.addEventListener('mouseout', function() {
+                tooltip.style.display = 'none';
+                document.body.removeChild(tooltip);
+            }, { once: true });
+        });
+    });
+}
+
+function addOptionClickEvents() {
+            document.querySelectorAll(".option").forEach(option => {
+                option.addEventListener("click", () => {
+                    document.querySelectorAll(".option").forEach(opt => opt.classList.remove("selected"));
+                    option.classList.add("selected");
+                    nextButton.disabled = false;
+                });
+            });
+        }
+
+        nextButton.addEventListener("click", () => {
+    const selectedOption = document.querySelector(".option.selected");
+    if (!selectedOption) return;
+
+    const selectedValue = selectedOption.dataset.value;
+    answers[questions[currentQuestionIndex].key] = selectedValue;
+    currentQuestionIndex++;
+
+    if (currentQuestionIndex < questions.length) {
+        showQuestion();
+        updateProgressBar(); // Fortschritt aktualisieren
+    } else {
+        showResults();
+        sendResultsToAPI(); // Nach den Fragen die Ergebnisse absenden
+    }
+});
+
+backButton.addEventListener("click", () => {
+    if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        showQuestion();
+        updateProgressBar(); // Fortschritt zurücksetzen
+    }
+});
+
+        restartButton.addEventListener("click", () => {
+            location.reload();
+        });
+
+        function updateProgressBar() {
+            const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+            progressBarFill.style.width = `${progress}%`;
+        }
+
+function updateButtons() {
+    backButton.disabled = currentQuestionIndex === 0;
+    nextButton.disabled = true;
+}
+
+function getRiskClass(riskLevel) {
+            switch (riskLevel) {
+                case "Individuelles Risiko":
+                    return "grau";
+                case "Kein Risiko":
+                    return "gruen";
+                case "Geringes Risiko":
+                    return "gelb";
+                case "Mittleres Risiko":
+                    return "orange";
+                case "Hohes Risiko":
+                    return "rot";
+                default:
+                    return "";
+            }
+        }
+
+    // Diese Funktion wird genutzt, um die Formulardaten zu extrahieren
+    function getResultsFromForm() {
+        const formData = {};
+
+        // Hier holst du die Eingabewerte und füllst sie in das formData-Objekt
+        formData.useAI = document.querySelector('input[name="useAI"]:checked') ? document.querySelector('input[name="useAI"]:checked').value : null;
+        formData.aiAreas = document.querySelector('input[name="aiAreas"]:checked') ? document.querySelector('input[name="aiAreas"]:checked').value : null;
+
+        // Weitere Formularfelder können hier hinzugefügt werden
+
+        return formData;
+    }   
+
+        async function sendResultsToAPI() {
+    const results = getResultsFromForm();  // Hol die Formulardaten mit dieser Funktion
+
+    try {
+        const response = await fetch('https://aiactchecker.vercel.app/api/saveResults', {
+            method: 'POST',  // Stelle sicher, dass POST verwendet wird
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(results),  // Die Formulardaten in JSON umwandeln
+        });
+
+        if (response.ok) {
+            const responseData = await response.json();
+            console.log(responseData.message);  // Erfolgreiche Antwort
+        } else {
+            const errorData = await response.json();
+            console.log('Fehler:', errorData.message);  // Fehlerbehandlung
+        }
+    } catch (error) {
+        console.error('Fehler beim Senden der Ergebnisse:', error);
+    }
+}
+    
+function showResults() {
+            toggleVisibility("main-container", "results-container");
+            renderAccordion();
+        }
+
+        function renderAccordion() {
+        const results = document.getElementById("results");
+        results.innerHTML = questions.map((q, index) => {
+            const selectedAnswer = answers[q.key];
+            if (!selectedAnswer) return '';
+            const riskLevel = q.risk[selectedAnswer];
+            const riskClass = getRiskClass(riskLevel);
+
+            return `
+                <div class="accordion ${riskClass}">
+                    <div class="accordion-header">
+                        <span>${index + 1}. ${q.question}</span>
+                        <div class="risk-indicator"></div>
+                    </div>
+                    <div class="accordion-content">
+                        <p><strong>Antwort:</strong> ${selectedAnswer}</p>
+                        <p><strong>Risiko:</strong> ${riskLevel}</p>
+                        <p><strong>Begründung:</strong> ${q.justification[selectedAnswer]}</p>
+                        <p><strong>Rechtsgrundlage:</strong> ${q.legalReference[selectedAnswer]}</p>
+                    </div>
+                </div>`;
+        }).join("");
+
+        document.querySelectorAll(".accordion-header").forEach(header => {
+            header.addEventListener("click", () => {
+                const accordion = header.parentElement;
+                accordion.classList.toggle("expanded");
+            });
+        });
+    }
+    </script>
+</body>
+</html>
