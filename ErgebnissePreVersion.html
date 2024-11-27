@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Ergebnisse Visualisierung</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', Arial, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .wrapper {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: #1f2937;
+        }
+
+        .dropdown-container {
+            text-align: center;
+            margin-bottom: 10px; /* Reduzierter Abstand */
+        }
+
+        select {
+            padding: 8px 10px;
+            font-size: 0.9rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+            outline: none;
+        }
+
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 10px 0; /* Minimaler Abstand */
+        }
+
+        canvas {
+            max-width: 280px; /* Kompakteres Diagramm */
+            height: auto;
+        }
+
+        .legend-container {
+            text-align: center;
+            margin-top: 5px; /* Reduzierter Abstand */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 8px 10px;
+            border: 1px solid #e5e7eb;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+
+        th {
+            background-color: #f9fafb;
+            color: #6b7280;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f3f4f6;
+        }
+
+        tr:hover {
+            background-color: #e5e7eb;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px 0;
+            color: #6b7280;
+        }
+
+        footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <h1>Dashboard - Ergebnisse Visualisierung</h1>
+
+        <div class="dropdown-container">
+            <select id="question-select"></select>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="results-chart"></canvas>
+        </div>
+
+        <div class="legend-container">
+            <p id="chart-legend"></p>
+        </div>
+
+        <h3>Rohdaten</h3>
+        <table id="results-table">
+            <thead>
+                <tr>
+                    <th>Frage</th>
+                    <th>Antwort</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <footer>
+        Entwickelt mit <span style="color: red;">❤</span> und <a href="https://supabase.io" target="_blank">Supabase</a>.
+    </footer>
+
+    <script>
+        const supabase = window.supabase.createClient(
+            'https://ltzvbzpeplnjlokvbuit.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0enZienBlcGxuamxva3ZidWl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI1Mjc5MjksImV4cCI6MjA0ODEwMzkyOX0.7iXtEDPdsQIko7wvn7p5m922FOR5WLE96cYbt2lm2GY'
+        );
+
+        let chartInstance;
+
+        async function fetchResults() {
+            const { data, error } = await supabase
+                .from('results')
+                .select('question_key, answer, timestamp');
+
+            if (error) {
+                console.error("Fehler beim Abrufen der Daten:", error);
+                return;
+            }
+
+            renderTable(data);
+            populateDropdown(data);
+            updateChart(data, document.getElementById('question-select').value);
+        }
+
+        function renderTable(data) {
+            const tableBody = document.getElementById('results-table').querySelector('tbody');
+            tableBody.innerHTML = "";
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.question_key}</td>
+                    <td>${row.answer}</td>
+                    <td>${new Date(row.timestamp).toLocaleString()}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function populateDropdown(data) {
+            const dropdown = document.getElementById('question-select');
+            const uniqueQuestions = [...new Set(data.map(item => item.question_key))];
+
+            dropdown.innerHTML = "";
+
+            uniqueQuestions.forEach(question => {
+                const option = document.createElement('option');
+                option.value = question;
+                option.textContent = question.length > 50 ? question.slice(0, 47) + "..." : question;
+                dropdown.appendChild(option);
+            });
+
+            dropdown.addEventListener('change', () => {
+                updateChart(data, dropdown.value);
+            });
+        }
+
+        function updateChart(data, selectedQuestion) {
+            const filteredData = data.filter(row => row.question_key === selectedQuestion);
+
+            const answerCounts = filteredData.reduce((acc, row) => {
+                acc[row.answer] = (acc[row.answer] || 0) + 1;
+                return acc;
+            }, {});
+
+            const labels = Object.keys(answerCounts);
+            const values = Object.values(answerCounts);
+            const totalResponses = values.reduce((sum, val) => sum + val, 0);
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const ctx = document.getElementById('results-chart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: `Antworten`,
+                        data: values,
+                        backgroundColor: labels.map(() => getRandomColor()),
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: (item) => {
+                                    const percentage = ((item.raw / totalResponses) * 100).toFixed(1);
+                                    return `${item.label}: ${item.raw} (${percentage}%)`;
+                                }
+                            },
+                            position: 'nearest',
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            bodyFont: { size: 14 },
+                            titleFont: { size: 16 },
+                            padding: 10
+                        },
+                        legend: { display: true, position: 'bottom' }
+                    },
+                    animation: { animateScale: true, animateRotate: true }
+                }
+            });
+        }
+
+        function getRandomColor() {
+            return `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.7)`;
+        }
+
+        window.onload = fetchResults;
+    </script>
+</body>
+</html>
