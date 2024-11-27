@@ -5,7 +5,7 @@ const cors = require("cors");
 
 // Supabase-Daten
 const supabaseUrl = "https://ltzvbzpeplnjlokvbuit.supabase.co";
-const supabaseKey = "your-supabase-key";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0enZienBlcGxuamxva3ZidWl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI1Mjc5MjksImV4cCI6MjA0ODEwMzkyOX0.7iXtEDPdsQIko7wvn7p5m922FOR5WLE96cYbt2lm2GY";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const app = express();
@@ -32,11 +32,13 @@ app.options("/api/saveResults", (req, res) => {
 
 // Grundlegende Route
 app.get("/", (req, res) => {
+    res.header("Access-Control-Allow-Origin", "https://reviergold.de");
     res.send("Server läuft! Willkommen bei deinem Node.js-Projekt.");
 });
 
 // API-Route für das Speichern von Ergebnissen
 app.post("/api/saveResults", async (req, res) => {
+    res.header("Access-Control-Allow-Origin", "https://reviergold.de");
     const answers = req.body;
 
     try {
@@ -62,6 +64,7 @@ app.post("/api/saveResults", async (req, res) => {
 
 // API-Route für das Abrufen der Ergebnisse
 app.get("/api/getResults", async (req, res) => {
+    res.header("Access-Control-Allow-Origin", "https://reviergold.de");
     try {
         const { data, error } = await supabase.from("results").select("*");
 
