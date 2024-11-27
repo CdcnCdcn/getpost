@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Ergebnisse Visualisierung</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', Arial, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .wrapper {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: #1f2937;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .controls input[type="date"] {
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .controls button {
+            padding: 10px 20px;
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .controls button:hover {
+            background: #45a049;
+        }
+
+        select {
+            padding: 8px 10px;
+            font-size: 0.9rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+            transition: border-color 0.3s, box-shadow 0.3s;
+            margin-bottom: 10px; /* Reduced space */
+        }
+
+        select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+            outline: none;
+        }
+
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 10px 0; /* Minimaler Abstand */
+        }
+
+        canvas {
+            max-width: 280px; /* Kompakteres Diagramm */
+            height: auto;
+        }
+
+        .legend-container {
+            text-align: center;
+            margin-top: 5px; /* Reduzierter Abstand */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 8px 10px;
+            border: 1px solid #e5e7eb;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+
+        th {
+            background-color: #f9fafb;
+            color: #6b7280;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f3f4f6;
+        }
+
+        tr:hover {
+            background-color: #e5e7eb;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            margin: 0 5px;
+            padding: 10px 15px;
+            border: none;
+            background: #ddd;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .pagination button.active {
+            background: #4caf50;
+            color: white;
+        }
+
+        .pagination button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px 0;
+            color: #6b7280;
+        }
+
+        footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body data-rsssl=1 data-rsssl=1>
+    <div class="wrapper">
+        <h1>Dashboard - Ergebnisse Visualisierung</h1>
+
+        <div class="controls">
+            <input type="date" id="start-date" />
+            <input type="date" id="end-date" />
+            <button id="export-btn">Exportieren (CSV)</button>
+        </div>
+
+        <div class="dropdown-container">
+            <select id="question-select"></select>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="results-chart"></canvas>
+        </div>
+
+        <div class="legend-container">
+            <p id="chart-legend"></p>
+        </div>
+
+        <h3>Rohdaten</h3>
+        <table id="results-table">
+            <thead>
+                <tr>
+                    <th>Frage</th>
+                    <th>Antwort</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <div class="pagination">
+            <button id="prev-page" disabled>Zurück</button>
+            <button id="next-page" disabled>Weiter</button>
+        </div>
+    </div>
+
+    <footer>
+        Entwickelt mit <span style="color: red;">❤</span> und <a href="https://supabase.io" target="_blank" rel="noopener">Supabase</a>.
+    </footer>
+
+    <script>
+        const supabase = window.supabase.createClient(
+            'https://ltzvbzpeplnjlokvbuit.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0enZienBlcGxuamxva3ZidWl0Iiwicm9sSI6ImFub24iLCJpYXQiOjE3MzI1Mjc5MjksImV4cCI6MjA0ODEwMzkyOX0.7iXtEDPdsQIko7wvn7p5m922FOR5WLE96cYbt2lm2GY'
+        );
+
+        let fullData = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let chartInstance;
+
+        async function fetchResults() {
+            const { data, error } = await supabase
+                .from('results')
+                .select('question_key, answer, timestamp');
+
+            if (error) {
+                console.error("Fehler beim Abrufen der Daten:", error);
+                return;
+            }
+
+            console.log("Fetched data:", data); // Add this line to debug
+            fullData = data;
+            renderTable();
+            populateDropdown();
+            updateChart(data, document.getElementById('question-select').value);
+        }
+
+        function renderTable() {
+            const tableBody = document.getElementById('results-table').querySelector('tbody');
+            tableBody.innerHTML = "";
+
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const paginatedData = fullData.slice(start, end);
+
+            paginatedData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.question_key}</td>
+                    <td>${row.answer}</td>
+                    <td>${new Date(row.timestamp).toLocaleString()}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            updatePaginationControls();
+        }
+
+        function populateDropdown() {
+            const dropdown = document.getElementById('question-select');
+            const uniqueQuestions = [...new Set(fullData.map(item => item.question_key))];
+
+            dropdown.innerHTML = "";
+
+            uniqueQuestions.forEach(question => {
+                const option = document.createElement('option');
+                option.value = question;
+                option.textContent = question.length > 50 ? question.slice(0, 47) + "..." : question;
+                dropdown.appendChild(option);
+            });
+
+            dropdown.addEventListener('change', () => {
+                updateChart(fullData, dropdown.value);
+            });
+        }
+
+        function updateChart(data, selectedQuestion) {
+            const filteredData = data.filter(row => row.question_key === selectedQuestion);
+
+            const answerCounts = filteredData.reduce((acc, row) => {
+                acc[row.answer] = (acc[row.answer] || 0) + 1;
+                return acc;
+            }, {});
+
+            const labels = Object.keys(answerCounts);
+            const values = Object.values(answerCounts);
+            const totalResponses = values.reduce((sum, val) => sum + val, 0);
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const ctx = document.getElementById('results-chart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: `Antworten`,
+                        data: values,
+                        backgroundColor: labels.map(() => getRandomColor()),
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: (item) => {
+                                    const percentage = ((item.raw / totalResponses) * 100).toFixed(1);
+                                    return `${item.label}: ${item.raw} (${percentage}%)`;
+                                }
+                            },
+                            position: 'nearest',
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            bodyFont: { size: 14 },
+                            titleFont: { size: 16 },
+                            padding: 10
+                        },
+                        legend: { display: true, position: 'bottom' }
+                    },
+                    animation: { animateScale: true, animateRotate: true }
+                }
+            });
+        }
+
+        function getRandomColor() {
+            return `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.7)`;
+        }
+
+        function updatePaginationControls() {
+            const totalPages = Math.ceil(fullData.length / itemsPerPage);
+            document.getElementById("prev-page").disabled = currentPage === 1;
+            document.getElementById("next-page").disabled = currentPage === totalPages;
+        }
+
+        document.getElementById("prev-page").addEventListener("click", () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
+        });
+
+        document.getElementById("next-page").addEventListener("click", () => {
+            const totalPages = Math.ceil(fullData.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+            }
+        });
+
+        document.getElementById("export-btn").addEventListener("click", () => {
+            const startDate = new Date(document.getElementById("start-date").value);
+            const endDate = new Date(document.getElementById("end-date").value);
+
+            const filteredData = fullData.filter(row => {
+                const timestamp = new Date(row.timestamp);
+                return timestamp >= startDate && timestamp <= endDate;
+            });
+
+            const csvContent = [
+                ["Frage", "Antwort", "Timestamp"],
+                ...filteredData.map(row => [row.question_key, row.answer, new Date(row.timestamp).toLocaleString()])
+            ].map(e => e.join(",")).join("\n");
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "results.csv";
+            link.click();
+        });
+
+        window.onload = fetchResults;
+    </script>
+</body>
+</html>
